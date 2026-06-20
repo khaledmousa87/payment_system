@@ -1141,7 +1141,7 @@ async function renderAdminContent(){
       </div>`).join('')}`;
 
   } else if(currentAdminTab==='sites'){
-    const { data:sts } = await sb.from('sites').select('*').order('name');
+    const { data:sts, error:sitesErr } = await sb.from('sites').select('*').order('name');
     const list = sts||[];
     container.innerHTML = `
       <div class="add-form-box">
@@ -1151,6 +1151,8 @@ async function renderAdminContent(){
           <button class="btn btn-approve" onclick="addSite()">+ إضافة</button>
         </div>
       </div>
+      ${sitesErr?`<div style="margin:12px 16px;padding:12px;background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;color:#b91c1c;font-size:13px">⚠ خطأ في تحميل المواقع: ${esc(sitesErr.message)}</div>`:''}
+      ${!sitesErr && !list.length?`<div style="margin:12px 16px;padding:12px;color:var(--text3);font-size:13px;text-align:center">لا توجد مواقع مسجّلة بعد</div>`:''}
       ${list.map(s=>`
         <div class="cat-card" style="display:flex;justify-content:space-between;align-items:center;margin:6px 16px">
           <span style="font-weight:600;flex:1">🏗 ${esc(s.name)}</span>
@@ -1158,7 +1160,7 @@ async function renderAdminContent(){
         </div>`).join('')}`;
 
   } else if(currentAdminTab==='cats'){
-    const { data:cats } = await sb.from('categories').select('*').order('name');
+    const { data:cats, error:catsErr } = await sb.from('categories').select('*').order('name');
     const list = cats||[];
     container.innerHTML = `
       <div class="add-form-box">
@@ -1168,6 +1170,8 @@ async function renderAdminContent(){
           <button class="btn btn-approve" onclick="addCategory()">+ إضافة</button>
         </div>
       </div>
+      ${catsErr?`<div style="margin:12px 16px;padding:12px;background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;color:#b91c1c;font-size:13px">⚠ خطأ في تحميل التصنيفات: ${esc(catsErr.message)}</div>`:''}
+      ${!catsErr && !list.length?`<div style="margin:12px 16px;padding:12px;color:var(--text3);font-size:13px;text-align:center">لا توجد تصنيفات مسجّلة بعد</div>`:''}
       ${list.map(c=>`
         <div class="cat-card" style="display:flex;justify-content:space-between;align-items:center;margin:6px 16px">
           <span style="font-weight:600;flex:1">📁 ${esc(c.name)}</span>
@@ -1175,7 +1179,7 @@ async function renderAdminContent(){
         </div>`).join('')}`;
 
   } else if(currentAdminTab==='items'){
-    const { data:its } = await sb.from('item_types').select('*').order('name');
+    const { data:its, error:itemsErr } = await sb.from('item_types').select('*').order('name');
     const list = its||[];
     container.innerHTML = `
       <div class="add-form-box">
@@ -1185,6 +1189,8 @@ async function renderAdminContent(){
           <button class="btn btn-approve" onclick="addItemType()">+ إضافة</button>
         </div>
       </div>
+      ${itemsErr?`<div style="margin:12px 16px;padding:12px;background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;color:#b91c1c;font-size:13px">⚠ خطأ في تحميل البنود: ${esc(itemsErr.message)}</div>`:''}
+      ${!itemsErr && !list.length?`<div style="margin:12px 16px;padding:12px;color:var(--text3);font-size:13px;text-align:center">لا توجد بنود مسجّلة بعد</div>`:''}
       ${list.map(it=>`
         <div class="cat-card" style="display:flex;justify-content:space-between;align-items:center;margin:6px 16px">
           <span style="font-weight:600;flex:1">🧱 ${esc(it.name)}</span>
@@ -1297,7 +1303,8 @@ async function changeOwnPassword(){
 async function addSite(){
   const name = document.getElementById('new-site-name').value.trim();
   if(!name) return;
-  await sb.from('sites').insert({ name });
+  const { error } = await sb.from('sites').insert({ name });
+  if(error){ showToast('❌ فشل الإضافة: '+error.message); return; }
   showToast('✓ تم إضافة الموقع');
   await loadGlobalSites();
   await renderAdminContent();
@@ -1305,7 +1312,8 @@ async function addSite(){
 
 async function deleteSite(id, name){
   if(!confirm(`حذف موقع: ${name}؟ (لن يؤثر على الطلبات السابقة المرتبطة به)`)) return;
-  await sb.from('sites').delete().eq('id',id);
+  const { error } = await sb.from('sites').delete().eq('id',id);
+  if(error){ showToast('❌ فشل الحذف: '+error.message); return; }
   showToast('✓ تم الحذف');
   await loadGlobalSites();
   await renderAdminContent();
@@ -1314,7 +1322,8 @@ async function deleteSite(id, name){
 async function addCategory(){
   const name = document.getElementById('new-cat-name').value.trim();
   if(!name) return;
-  await sb.from('categories').insert({ name });
+  const { error } = await sb.from('categories').insert({ name });
+  if(error){ showToast('❌ فشل الإضافة: '+error.message); return; }
   showToast('✓ تم إضافة التصنيف');
   await loadGlobalCategories();
   await renderAdminContent();
@@ -1322,7 +1331,8 @@ async function addCategory(){
 
 async function deleteCategory(id, name){
   if(!confirm(`حذف تصنيف: ${name}؟`)) return;
-  await sb.from('categories').delete().eq('id',id);
+  const { error } = await sb.from('categories').delete().eq('id',id);
+  if(error){ showToast('❌ فشل الحذف: '+error.message); return; }
   showToast('✓ تم الحذف');
   await loadGlobalCategories();
   await renderAdminContent();
@@ -1331,7 +1341,8 @@ async function deleteCategory(id, name){
 async function addItemType(){
   const name = document.getElementById('new-item-name').value.trim();
   if(!name) return;
-  await sb.from('item_types').insert({ name });
+  const { error } = await sb.from('item_types').insert({ name });
+  if(error){ showToast('❌ فشل الإضافة: '+error.message); return; }
   showToast('✓ تم إضافة بند الصرف');
   await loadGlobalItemTypes();
   await renderAdminContent();
@@ -1339,7 +1350,8 @@ async function addItemType(){
 
 async function deleteItemType(id, name){
   if(!confirm(`حذف بند الصرف: ${name}؟`)) return;
-  await sb.from('item_types').delete().eq('id',id);
+  const { error } = await sb.from('item_types').delete().eq('id',id);
+  if(error){ showToast('❌ فشل الحذف: '+error.message); return; }
   showToast('✓ تم الحذف');
   await loadGlobalItemTypes();
   await renderAdminContent();
